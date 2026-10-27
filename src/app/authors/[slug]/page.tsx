@@ -2,7 +2,7 @@ import type { Metadata } from "next";
 import Image from "next/image";
 import { notFound } from "next/navigation";
 import { Listing } from "@/components/listing";
-import { pageNumber } from "@/lib/format";
+import { pageNumber, staticSlugs } from "@/lib/format";
 import { getAuthor, getPosts } from "@/lib/rblog";
 import { pageMetadata, withPage } from "@/lib/seo";
 
@@ -12,7 +12,7 @@ type Props = PageProps<"/authors/[slug]">;
 export async function generateStaticParams() {
   const posts = await getPosts({ perPage: 100 });
   const slugs = new Set(posts.data.flatMap((p) => (p.author.slug ? [p.author.slug] : [])));
-  return [...slugs].map((slug) => ({ slug }));
+  return staticSlugs([...slugs]);
 }
 
 export async function generateMetadata(props: Props): Promise<Metadata> {

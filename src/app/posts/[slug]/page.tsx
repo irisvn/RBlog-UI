@@ -2,7 +2,7 @@ import type { Metadata } from "next";
 import Link from "next/link";
 import { notFound, permanentRedirect } from "next/navigation";
 import { Article } from "@/components/article";
-import { formatShortDate } from "@/lib/format";
+import { formatShortDate, staticSlugs } from "@/lib/format";
 import { getPost, getPosts, getSettings, isRedirect } from "@/lib/rblog";
 import { absolute, jsonLd, pageMetadata, shareImage } from "@/lib/seo";
 import type { Post } from "@/lib/types";
@@ -11,7 +11,7 @@ type Props = PageProps<"/posts/[slug]">;
 
 export async function generateStaticParams() {
   const posts = await getPosts({ perPage: 100 });
-  return posts.data.map((post) => ({ slug: post.slug }));
+  return staticSlugs(posts.data.map((post) => post.slug));
 }
 
 export async function generateMetadata(props: Props): Promise<Metadata> {

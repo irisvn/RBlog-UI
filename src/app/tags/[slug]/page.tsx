@@ -1,7 +1,7 @@
 import type { Metadata } from "next";
 import { notFound, permanentRedirect } from "next/navigation";
 import { Listing } from "@/components/listing";
-import { pageNumber } from "@/lib/format";
+import { pageNumber, staticSlugs } from "@/lib/format";
 import { getTag, getTags, isRedirect } from "@/lib/rblog";
 import { pageMetadata, withPage } from "@/lib/seo";
 
@@ -9,7 +9,7 @@ type Props = PageProps<"/tags/[slug]">;
 
 export async function generateStaticParams() {
   const tags = await getTags();
-  return tags.data.filter((t) => t.post_count > 0).map((t) => ({ slug: t.slug }));
+  return staticSlugs(tags.data.filter((t) => t.post_count > 0).map((t) => t.slug));
 }
 
 export async function generateMetadata(props: Props): Promise<Metadata> {

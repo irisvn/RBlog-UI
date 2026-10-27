@@ -1,7 +1,7 @@
 import type { Metadata } from "next";
 import { notFound, permanentRedirect } from "next/navigation";
 import { Listing } from "@/components/listing";
-import { pageNumber } from "@/lib/format";
+import { pageNumber, staticSlugs } from "@/lib/format";
 import { getCategories, getCategory, isRedirect } from "@/lib/rblog";
 import { pageMetadata, withPage } from "@/lib/seo";
 
@@ -9,7 +9,7 @@ type Props = PageProps<"/categories/[slug]">;
 
 export async function generateStaticParams() {
   const categories = await getCategories();
-  return categories.data.map((c) => ({ slug: c.slug }));
+  return staticSlugs(categories.data.map((c) => c.slug));
 }
 
 export async function generateMetadata(props: Props): Promise<Metadata> {

@@ -49,6 +49,31 @@ npm run lint
 `config/webhook.toml`, không bao giờ commit). Nút Xem trước của admin chỉ tạo link khi URL công khai
 là `https://`.
 
+## Docker
+
+Image `ghcr.io/irisvn/rblog-ui` (linux/amd64, linux/arm64) được build bằng GitHub Actions
+(`.github/workflows/docker.yml`) mỗi lần push lên `main` (tag `latest`, `sha-<commit>`) và mỗi tag
+`vX.Y.Z`. Lúc build, Next.js dựng sẵn trang từ RBlog, nên repo cần (Settings → Secrets and variables →
+Actions):
+
+| Loại | Tên | Giá trị |
+|---|---|---|
+| Variable | `RBLOG_URL` | `https://cms.ducdoblog.com` |
+| Variable | `SITE_URL` | `https://test.ducdoblog.com` |
+| Secret | `RBLOG_CONTENT_KEY` | Content API key (chỉ dùng lúc build, qua BuildKit secret, không nằm trong image) |
+
+Build ở máy:
+
+```sh
+RBLOG_CONTENT_KEY=rcms_… docker build \
+  --build-arg RBLOG_URL=https://cms.ducdoblog.com --build-arg SITE_URL=https://test.ducdoblog.com \
+  --secret id=rblog_content_key,env=RBLOG_CONTENT_KEY -t rblog-ui .
+```
+
+Chạy: cổng `3000`, biến môi trường `RBLOG_CONTENT_KEY`, `RBLOG_WEBHOOK_SECRET` (bắt buộc), `RBLOG_URL`,
+`SITE_URL` (đã có từ lúc build, ghi đè được: ví dụ trỏ `RBLOG_URL` tới địa chỉ nội bộ của RBlog).
+`RBLOG_URL` và `SITE_URL` lúc build quyết định host ảnh được tối ưu và URL trong trang dựng sẵn.
+
 ## Trang
 
 | Đường dẫn | |

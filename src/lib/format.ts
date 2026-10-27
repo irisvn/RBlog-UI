@@ -32,3 +32,11 @@ export function pageNumber(value: string | string[] | undefined): number {
 export function firstParam(value: string | string[] | undefined): string {
   return (Array.isArray(value) ? value[0] : value)?.trim() ?? "";
 }
+
+/**
+ * Params for `generateStaticParams`. With Cache Components an empty list fails the build, so a
+ * site without content yet prerenders one slug that no record has (it renders the 404 page).
+ */
+export function staticSlugs(slugs: string[]): { slug: string }[] {
+  return (slugs.length > 0 ? slugs : ["_"]).map((slug) => ({ slug }));
+}

@@ -4,6 +4,8 @@ const rblog = new URL(process.env.RBLOG_URL ?? "http://localhost:8000");
 const isLocalCms = ["localhost", "127.0.0.1", "::1"].includes(rblog.hostname);
 
 const nextConfig: NextConfig = {
+  // A self-contained server for the Docker image (Dockerfile).
+  output: "standalone",
   cacheComponents: true,
   partialPrefetching: false,
   cacheLife: {
