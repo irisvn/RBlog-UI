@@ -73,6 +73,21 @@ Chạy: cổng `3000`, biến môi trường `RBLOG_CONTENT_KEY`, `RBLOG_WEBHOOK
 `SITE_URL` (đã có từ lúc build, ghi đè được: ví dụ trỏ `RBLOG_URL` tới địa chỉ nội bộ của RBlog).
 `RBLOG_URL` và `SITE_URL` lúc build quyết định host ảnh được tối ưu và URL trong trang dựng sẵn.
 
+## Deploy (RDockPanel)
+
+Service `ui` trong project `rblog` trên RDockPanel:
+
+- Image `ghcr.io/irisvn/rblog-ui:latest` (public). Sau khi GitHub Actions build xong, bấm **Deploy**
+  ở trang service.
+- Domain `test.ducdoblog.com` → cổng `3000`, HTTPS (Cloudflare Tunnel tới Traefik).
+- Biến môi trường: `RBLOG_URL=http://rblog_rblog:8000` (địa chỉ nội bộ của RBlog trong cùng project,
+  không vòng qua Cloudflare), `SITE_URL`, `RBLOG_CONTENT_KEY` (key "RBlog UI production", hết hạn sau
+  365 ngày: tạo key mới trước hạn), `RBLOG_WEBHOOK_SECRET` (trùng secret webhook trong RBlog).
+
+Phía RBlog (`cms.ducdoblog.com`): Cài đặt → Chung, URL công khai = `https://test.ducdoblog.com`;
+Cài đặt → Tích hợp, webhook = `https://test.ducdoblog.com/api/rblog-webhook`. Lần gửi webhook xem ở
+System → Queue.
+
 ## Trang
 
 | Đường dẫn | |
