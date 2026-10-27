@@ -40,6 +40,10 @@ Vietnamese.
   `tag:{slug}`, `author:{slug}`, `menu:{key}`, `settings`, `sitemap`).
   - A new getter follows the same pattern, or the webhook will not refresh it.
   - Inside a cached getter: return `null` for a 404, throw for anything else. Errors are not cached.
+- A build without `RBLOG_CONTENT_KEY` (the CI image) is OFFLINE: getters answer empty content
+  under the `offline` cache profile, without calling RBlog, and the first request after a deploy
+  refreshes them. A new getter that must answer during the build takes an offline fallback in
+  `must()`.
 - The preview (`getPreview`) is never cached: `no-store`, `await connection()`, noindex, and its
   images are `unoptimized`.
 - Types in `src/lib/types.ts` mirror the API exactly:

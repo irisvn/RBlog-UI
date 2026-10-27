@@ -28,8 +28,35 @@ export class RBlogError extends Error {
   }
 }
 
+/**
+ * A build without a Content API key (the Docker image built by CI, where RBlog is not reachable)
+ * prerenders with empty content and the `offline` cache profile: the first request after the
+ * deploy replaces it with RBlog's content.
+ */
+const OFFLINE = process.env.NEXT_PHASE === "phase-production-build" && !process.env.RBLOG_CONTENT_KEY;
+
+/** The cache profile of a getter (`next.config.ts`). */
+function life() {
+  if (OFFLINE) cacheLife("offline");
+  else cacheLife("rblog");
+}
+
+const EMPTY_LIST = { data: [], meta: { page: 1, perPage: 0, total: 0, lastPage: 1 } };
+
+const DEFAULT_SETTINGS: Settings = {
+  site_name: "RBlog",
+  description: "",
+  site_language: "vi",
+  frontend_url: null,
+  posts_per_page: 10,
+  logo: null,
+  seo: { meta_title: "", meta_description: "", og_image: null, social_links: {} },
+  homepage: { shows: "latest_posts", page_slug: null },
+};
+
 /** GET {RBLOG_URL}/api/v1/content{path} with the server-side key. `null` on 404. */
 async function get<T>(path: string): Promise<T | null> {
+  if (OFFLINE) return null;
   const res = await fetch(`${BASE}/api/v1/content${path}`, {
     headers: {
       Authorization: `Bearer ${process.env.RBLOG_CONTENT_KEY ?? ""}`,
@@ -41,7 +68,9 @@ async function get<T>(path: string): Promise<T | null> {
   return res.json() as Promise<T>;
 }
 
-async function must<T>(path: string): Promise<T> {
+/** Like `get`, but a 404 is an error. `offline` is the answer of a build without a key. */
+async function must<T>(path: string, offline: T): Promise<T> {
+  if (OFFLINE) return offline;
   const value = await get<T>(path);
   if (value === null) throw new RBlogError(404, path);
   return value;
@@ -63,10 +92,10 @@ export const ALL = "rblog";
 
 /** Every page of a list (the API answers at most 100 per page). */
 async function all<T>(path: string): Promise<List<T>> {
-  const first = await must<List<T>>(`${path}?per_page=100`);
+  const first = await must<List<T>>(`${path}?per_page=100`, EMPTY_LIST);
   const data = [...first.data];
   for (let page = 2; page <= first.meta.lastPage; page++) {
-    data.push(...(await must<List<T>>(`${path}?per_page=100&page=${page}`)).data);
+    data.push(...(await must<List<T>>(`${path}?per_page=100&page=${page}`, EMPTY_LIST)).data);
   }
   return { data, meta: { ...first.meta, page: 1, perPage: data.length, lastPage: 1 } };
 }
@@ -76,15 +105,15 @@ async function all<T>(path: string): Promise<List<T>> {
 
 export async function getSettings(): Promise<Settings> {
   "use cache";
-  cacheLife("rblog");
+  life();
   cacheTag(ALL);
   cacheTag("settings");
-  return must<Settings>("/settings");
+  return must<Settings>("/settings", DEFAULT_SETTINGS);
 }
 
 export async function getMenu(key: "primary" | "footer"): Promise<Menu | null> {
   "use cache";
-  cacheLife("rblog");
+  life();
   cacheTag(ALL);
   cacheTag(`menu:${key}`);
   return get<Menu>(`/menus/${key}`);
@@ -92,7 +121,7 @@ export async function getMenu(key: "primary" | "footer"): Promise<Menu | null> {
 
 export async function getPosts(filter: PostFilter = {}): Promise<List<PostSummary>> {
   "use cache";
-  cacheLife("rblog");
+  life();
   cacheTag(ALL);
   cacheTag("posts");
   if (filter.category) cacheTag(`category:${filter.category}`);
@@ -108,12 +137,13 @@ export async function getPosts(filter: PostFilter = {}): Promise<List<PostSummar
       featured: filter.featured,
       q: filter.q?.slice(0, 100),
     })}`,
+    EMPTY_LIST,
   );
 }
 
 export async function getPost(slug: string): Promise<Post | Redirect | null> {
   "use cache";
-  cacheLife("rblog");
+  life();
   cacheTag(ALL);
   cacheTag("posts");
   const post = await get<Post | Redirect>(`/posts/${enc(slug)}`);
@@ -123,7 +153,7 @@ export async function getPost(slug: string): Promise<Post | Redirect | null> {
 
 export async function getPages(): Promise<List<PageSummary>> {
   "use cache";
-  cacheLife("rblog");
+  life();
   cacheTag(ALL);
   cacheTag("pages");
   return all<PageSummary>("/pages");
@@ -131,7 +161,7 @@ export async function getPages(): Promise<List<PageSummary>> {
 
 export async function getPage(slug: string): Promise<Page | Redirect | null> {
   "use cache";
-  cacheLife("rblog");
+  life();
   cacheTag(ALL);
   cacheTag("pages");
   const page = await get<Page | Redirect>(`/pages/${enc(slug)}`);
@@ -141,7 +171,7 @@ export async function getPage(slug: string): Promise<Page | Redirect | null> {
 
 export async function getCategories(): Promise<List<Category>> {
   "use cache";
-  cacheLife("rblog");
+  life();
   cacheTag(ALL);
   cacheTag("posts");
   return all<Category>("/categories");
@@ -149,7 +179,7 @@ export async function getCategories(): Promise<List<Category>> {
 
 export async function getCategory(slug: string): Promise<Category | Redirect | null> {
   "use cache";
-  cacheLife("rblog");
+  life();
   cacheTag(ALL);
   cacheTag("posts", `category:${slug}`);
   return get<Category | Redirect>(`/categories/${enc(slug)}`);
@@ -157,7 +187,7 @@ export async function getCategory(slug: string): Promise<Category | Redirect | n
 
 export async function getTags(): Promise<List<Tag>> {
   "use cache";
-  cacheLife("rblog");
+  life();
   cacheTag(ALL);
   cacheTag("posts");
   return all<Tag>("/tags");
@@ -165,7 +195,7 @@ export async function getTags(): Promise<List<Tag>> {
 
 export async function getTag(slug: string): Promise<Tag | Redirect | null> {
   "use cache";
-  cacheLife("rblog");
+  life();
   cacheTag(ALL);
   cacheTag("posts", `tag:${slug}`);
   return get<Tag | Redirect>(`/tags/${enc(slug)}`);
@@ -173,7 +203,7 @@ export async function getTag(slug: string): Promise<Tag | Redirect | null> {
 
 export async function getAuthor(slug: string): Promise<Author | null> {
   "use cache";
-  cacheLife("rblog");
+  life();
   cacheTag(ALL);
   cacheTag(`author:${slug}`);
   return get<Author>(`/authors/${enc(slug)}`);
@@ -181,10 +211,10 @@ export async function getAuthor(slug: string): Promise<Author | null> {
 
 export async function getSitemap(type: string, after?: string): Promise<SitemapBatch> {
   "use cache";
-  cacheLife("rblog");
+  life();
   cacheTag(ALL);
   cacheTag("sitemap");
-  return must<SitemapBatch>(`/sitemap${query({ type, after })}`);
+  return must<SitemapBatch>(`/sitemap${query({ type, after })}`, { data: [], next: null });
 }
 
 /** A draft for /preview. Never cached: the token is short-lived and the content private. */

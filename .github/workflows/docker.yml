@@ -1,9 +1,9 @@
 # Builds the image ghcr.io/<owner>/rblog-ui on every push to main (tags :latest and :sha-<short>)
 # and on a tag vX.Y.Z (:X.Y.Z), for linux/amd64 and linux/arm64, each on its own native runner.
 #
-# The build prerenders pages from RBlog, so the repository needs:
-#   - variables RBLOG_URL (https://cms.…) and SITE_URL (https://…, this site's public URL);
-#   - secret RBLOG_CONTENT_KEY (a Content API key, read only).
+# The repository needs the variables RBLOG_URL (https://cms.…) and SITE_URL (this site's public
+# URL). No Content API key: the build never calls RBlog (GitHub's runners are refused by the CMS's
+# Cloudflare anyway), and the first request after a deploy fills the pages (src/lib/rblog.ts).
 name: docker
 
 on:
@@ -32,15 +32,12 @@ jobs:
     runs-on: ${{ matrix.runner }}
     steps:
       - name: Build settings are present
-        env:
-          KEY: ${{ secrets.RBLOG_CONTENT_KEY }}
         run: |
           missing=""
-          [ -n "${{ vars.RBLOG_URL }}" ] || missing="$missing variable RBLOG_URL;"
-          [ -n "${{ vars.SITE_URL }}" ] || missing="$missing variable SITE_URL;"
-          [ -n "$KEY" ] || missing="$missing secret RBLOG_CONTENT_KEY;"
+          [ -n "${{ vars.RBLOG_URL }}" ] || missing="$missing RBLOG_URL;"
+          [ -n "${{ vars.SITE_URL }}" ] || missing="$missing SITE_URL;"
           if [ -n "$missing" ]; then
-            echo "::error::Settings → Secrets and variables → Actions is missing:$missing"
+            echo "::error::Settings → Secrets and variables → Actions → Variables is missing:$missing"
             exit 1
           fi
       - uses: actions/checkout@v5
@@ -61,8 +58,6 @@ jobs:
           build-args: |
             RBLOG_URL=${{ vars.RBLOG_URL }}
             SITE_URL=${{ vars.SITE_URL }}
-          secrets: |
-            rblog_content_key=${{ secrets.RBLOG_CONTENT_KEY }}
           outputs: type=image,name=${{ env.IMAGE }},push-by-digest=true,name-canonical=true,push=true
           cache-from: type=gha,scope=${{ matrix.platform }}
           cache-to: type=gha,mode=max,scope=${{ matrix.platform }}

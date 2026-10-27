@@ -53,21 +53,20 @@ là `https://`.
 
 Image `ghcr.io/irisvn/rblog-ui` (linux/amd64, linux/arm64) được build bằng GitHub Actions
 (`.github/workflows/docker.yml`) mỗi lần push lên `main` (tag `latest`, `sha-<commit>`) và mỗi tag
-`vX.Y.Z`. Lúc build, Next.js dựng sẵn trang từ RBlog, nên repo cần (Settings → Secrets and variables →
-Actions):
+`vX.Y.Z`. Repo cần hai biến (Settings → Secrets and variables → Actions → Variables):
+`RBLOG_URL` = `https://cms.ducdoblog.com` và `SITE_URL` = `https://test.ducdoblog.com`.
 
-| Loại | Tên | Giá trị |
-|---|---|---|
-| Variable | `RBLOG_URL` | `https://cms.ducdoblog.com` |
-| Variable | `SITE_URL` | `https://test.ducdoblog.com` |
-| Secret | `RBLOG_CONTENT_KEY` | Content API key (chỉ dùng lúc build, qua BuildKit secret, không nằm trong image) |
+Build trên GitHub **không gọi RBlog** (Cloudflare của CMS chặn IP của GitHub Actions) và không cần
+key: các trang được dựng sẵn ở dạng rỗng, với cache profile `offline` (làm mới sau 1 giây), nên lần
+truy cập đầu tiên sau khi deploy đã lấy nội dung thật. Build có key (ở máy, qua BuildKit secret) thì
+dựng sẵn trang có nội dung.
 
 Build ở máy:
 
 ```sh
-RBLOG_CONTENT_KEY=rcms_… docker build \
-  --build-arg RBLOG_URL=https://cms.ducdoblog.com --build-arg SITE_URL=https://test.ducdoblog.com \
-  --secret id=rblog_content_key,env=RBLOG_CONTENT_KEY -t rblog-ui .
+docker build --build-arg RBLOG_URL=https://cms.ducdoblog.com \
+  --build-arg SITE_URL=https://test.ducdoblog.com -t rblog-ui .
+# tuỳ chọn, dựng sẵn trang có nội dung: thêm --secret id=rblog_content_key,env=RBLOG_CONTENT_KEY
 ```
 
 Chạy: cổng `3000`, biến môi trường `RBLOG_CONTENT_KEY`, `RBLOG_WEBHOOK_SECRET` (bắt buộc), `RBLOG_URL`,

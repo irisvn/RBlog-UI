@@ -12,6 +12,8 @@ const nextConfig: NextConfig = {
     // RBlog content: the webhook revalidates on change; the 10-minute revalidate is the
     // fallback when the webhook is unreachable (docs/api.md, "Webhook").
     rblog: { stale: 300, revalidate: 600, expire: 86400 },
+    // Pages a build without a key prerendered empty (src/lib/rblog.ts): refreshed on first visit.
+    offline: { stale: 300, revalidate: 1, expire: 86400 },
   },
   images: {
     remotePatterns: [
